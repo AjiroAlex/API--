@@ -7,6 +7,12 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// إنشاء مجلد "public" إذا لم يكن موجودًا
+const publicDir = path.join(__dirname, "public");
+if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir);
+}
+
 // إعداد Multer لحفظ الملفات مؤقتًا
 const upload = multer({ dest: "uploads/" });
 
@@ -41,7 +47,7 @@ app.post("/remove-bg", upload.single("image"), async (req, res) => {
         );
 
         // حفظ الصورة المعالجة
-        const outputPath = path.join(__dirname, "public", "output.png");
+        const outputPath = path.join(publicDir, "output.png");
         fs.writeFileSync(outputPath, response.data);
 
         // إظهار الصورة في الصفحة
