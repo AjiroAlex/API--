@@ -7,16 +7,21 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// إعداد multer لحفظ الصور مؤقتًا
+// إعداد Multer لحفظ الملفات مؤقتًا
 const upload = multer({ dest: "uploads/" });
 
-// مفتاح API مباشرة في الكود
+// مفتاح API (ثابت في الكود)
 const REMOVE_BG_API_KEY = "nb2A2cXYZFRtdpsWN6sRZFZr";
 
-// نقطة نهاية لإزالة الخلفية
+// عرض صفحة HTML عند الدخول إلى الموقع
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// معالجة رفع الصور وإزالة الخلفية
 app.post("/remove-bg", upload.single("image"), async (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: "لم يتم تحميل أي صورة!" });
+        return res.send("يرجى تحميل صورة!");
     }
 
     try {
@@ -35,22 +40,33 @@ app.post("/remove-bg", upload.single("image"), async (req, res) => {
             }
         );
 
-        // حفظ الصورة وإرسالها للمستخدم
-        const outputPath = path.join(__dirname, "output.png");
+        // حفظ الصورة المعالجة
+        const outputPath = path.join(__dirname, "public", "output.png");
         fs.writeFileSync(outputPath, response.data);
-        res.sendFile(outputPath);
+
+        // إظهار الصورة في الصفحة
+        res.send(`
+            <h2>تمت إزالة الخلفية بنجاح!</h2>
+            <img src="/output.png" alt="الصورة المعالجة" style="width:100%;max-width:500px;border-radius:10px;">
+            <br><br>
+            <a href="/output.png" download="no-bg.png">
+                <button style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:5px;cursor:pointer;">
+                    تحميل الصورة
+                </button>
+            </a>
+            <br><br>
+            <a href="/">🔄 العودة</a>
+        `);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "فشل في إزالة الخلفية!" });
+        res.send("حدث خطأ أثناء إزالة الخلفية!");
     } finally {
         fs.unlinkSync(req.file.path); // حذف الملف الأصلي
     }
 });
 
-// نقطة اختبار
-app.get("/", (req, res) => {
-    res.json({ message: "مرحبًا بك في API إزالة الخلفية باستخدام Node.js!" });
-});
+// تقديم الملفات الثابتة (للصور المعالجة)
+app.use(express.static("public"));
 
 // تشغيل السيرفر
 app.listen(port, () => {
